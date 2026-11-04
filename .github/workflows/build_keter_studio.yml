@@ -1,0 +1,67 @@
+  name: Build Keter AI Studio (Windows & macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6.8
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.3"
+          target: "desktop"
+          cache: true
+
+      - name: Configure and Build Windows Executable
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --parallel
+
+      - name: Package Windows App with windeployqt
+        run: |
+          mkdir dist
+          copy build\Release\KeterAIStudio.exe dist\
+          windeployqt --release --no-translations dist\KeterAIStudio.exe
+
+      - name: Upload Windows Application
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeterAIStudio-Windows-x64
+          path: dist/*
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt 6.8
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.3"
+          target: "desktop"
+          cache: true
+
+      - name: Configure and Build macOS App Bundle
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --parallel
+
+      - name: Package macOS DMG with macdeployqt
+        run: |
+          macdeployqt build/KeterAIStudio.app -dmg
+          mkdir -p dist_mac
+          mv build/KeterAIStudio.dmg dist_mac/
+
+      - name: Upload macOS DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: KeterAIStudio-macOS-arm64
+          path: dist_mac/KeterAIStudio.dmg
