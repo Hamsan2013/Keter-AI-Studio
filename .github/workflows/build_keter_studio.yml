@@ -1,4 +1,4 @@
-  name: Build Keter AI Studio (Windows & macOS)
+name: Build Keter AI Studio (Windows & macOS)
 
 on:
   workflow_dispatch:
