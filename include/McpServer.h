@@ -1,4 +1,4 @@
-  #pragma once
+#pragma once
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QJsonDocument>
