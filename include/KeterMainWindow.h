@@ -1,5 +1,7 @@
 #pragma once
 #include <QMainWindow>
+#include <QCoreApplication>
+#include <QRegularExpression>
 #include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
