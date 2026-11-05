@@ -49,6 +49,11 @@ jobs:
           target: "desktop"
           cache: true
 
+      - name: Provide Stub for Deprecated AGL Framework
+        run: |
+          sudo mkdir -p /Library/Frameworks/AGL.framework
+          sudo clang -shared -o /Library/Frameworks/AGL.framework/AGL -x c /dev/null
+
       - name: Configure and Build macOS App Bundle
         run: |
           cmake -B build -DCMAKE_BUILD_TYPE=Release
