@@ -6,7 +6,6 @@
 #include <QJsonArray>
 #include <QDateTime>
 #include <functional>
-#include "IKeterPlugin.h"
 
 class McpServer : public QTcpServer {
     Q_OBJECT
@@ -17,10 +16,6 @@ public:
 
     void setInferenceCallback(AiInferenceCallback cb) {
         m_inferenceCallback = std::move(cb);
-    }
-
-    void registerCppPlugin(IKeterPlugin* plugin) {
-        if (plugin) m_plugins.append(plugin);
     }
 
     bool startMcp(quint16 port = 8765) {
@@ -81,7 +76,6 @@ protected:
     }
 
 private:
-    QList<IKeterPlugin*> m_plugins;
     AiInferenceCallback m_inferenceCallback;
 
     QJsonObject handleJsonRpc(const QJsonObject& req) {
@@ -104,11 +98,7 @@ private:
                 {"capabilities", QJsonObject{{"tools", QJsonObject{{"listChanged", true}}}}}
             };
         } else if (method == "tools/list") {
-            QJsonArray tools = builtInGameEngineTools();
-            for (auto* plugin : m_plugins) {
-                for (const auto& t : plugin->registeredMcpTools()) tools.append(t);
-            }
-            res["result"] = QJsonObject{{"tools", tools}};
+            res["result"] = QJsonObject{{"tools", builtInGameEngineTools()}};
         } else if (method == "tools/call") {
             QString toolName = params["name"].toString();
             QJsonObject args = params["arguments"].toObject();
@@ -155,12 +145,6 @@ private:
     }
 
     QJsonObject executeMcpTool(const QString& name, const QJsonObject& args) {
-        // Check loaded C++ plugins first
-        for (auto* plugin : m_plugins) {
-            QJsonObject out = plugin->executeTool(name, args);
-            if (!out.isEmpty()) return out;
-        }
-
         QString prompt;
         if (name == "godot_generate_script") {
             prompt = QString("Write a complete Godot 4 GDScript extending %1 for: %2")
