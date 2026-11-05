@@ -24,11 +24,20 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --parallel
 
-      - name: Package Windows App with windeployqt
+      - name: Bundle Official llama.cpp Runtime and Package with windeployqt
+        shell: pwsh
         run: |
-          mkdir dist
-          copy build\Release\KeterAIStudio.exe dist\
-          windeployqt --release --no-translations dist\KeterAIStudio.exe
+          New-Item -ItemType Directory -Force -Path dist/runtime | Out-Null
+          Copy-Item build/Release/KeterAIStudio.exe dist/
+          windeployqt --release --no-translations dist/KeterAIStudio.exe
+
+          Write-Host "Fetching official llama.cpp Windows x64 runtime..."
+          $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/ggml-org/llama.cpp/releases/latest"
+          $asset = $rel.assets | Where-Object { $_.name -match "bin-win-cpu-x64\.zip$" -or $_.name -match "bin-win-avx2-x64\.zip$" } | Select-Object -First 1
+          if ($asset) {
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile llama_win.zip
+            Expand-Archive -Path llama_win.zip -DestinationPath dist/runtime -Force
+          }
 
       - name: Upload Windows Application
         uses: actions/upload-artifact@v4
@@ -59,11 +68,13 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release --parallel
 
-      - name: Package macOS DMG with macdeployqt
+      - name: Package and Smoke-Test macOS DMG
         run: |
           macdeployqt build/KeterAIStudio.app -dmg
           mkdir -p dist_mac
           mv build/KeterAIStudio.dmg dist_mac/
+          file build/KeterAIStudio.app/Contents/MacOS/KeterAIStudio
+          otool -L build/KeterAIStudio.app/Contents/MacOS/KeterAIStudio
 
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
